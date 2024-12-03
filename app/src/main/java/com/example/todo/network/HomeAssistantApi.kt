@@ -1,5 +1,6 @@
 package com.example.todo.network
 
+import com.example.todo.models.AddItemRequest
 import com.example.todo.models.CompleteItemRequest
 import com.example.todo.models.ShoppingItem
 import retrofit2.Response
@@ -22,4 +23,10 @@ interface HomeAssistantApi {
         @Path("service") service: String, // Usługa np. complete_item lub incomplete_item
         @Body data: CompleteItemRequest
     ): Response<Unit>
+    @POST("api/services/shopping_list/add_item")
+    suspend fun addItem(
+        @Header("Authorization") authHeader: String,
+        @Body data: AddItemRequest
+    ): Response<Unit>
+
 }

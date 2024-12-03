@@ -7,6 +7,7 @@ import com.example.todo.models.ShoppingItem
 import com.example.todo.network.ApiClient
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.mutableStateListOf
+import com.example.todo.models.AddItemRequest
 
 class ShoppingListViewModel : ViewModel() {
     val shoppingItems = mutableStateListOf<ShoppingItem>()
@@ -60,7 +61,37 @@ class ShoppingListViewModel : ViewModel() {
             }
         }
     }
+    fun addItem(
+        token: String,
+        itemName: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val response = ApiClient.api.addItem(
+                    authHeader = "Bearer $token",
+                    data = AddItemRequest(name = itemName)
+                )
+
+                if (response.isSuccessful) {
+                    // Pobierz zaktualizowaną listę po dodaniu elementu
+                    fetchShoppingList(
+                        token = token,
+                        onSuccess = onSuccess,
+                        onError = onError
+                    )
+                } else {
+                    onError("Error: ${response.code()} - ${response.message()}")
+                }
+            } catch (e: Exception) {
+                onError("Exception: ${e.localizedMessage}")
+            }
+        }
+    }
+
 }
+
 
 
 

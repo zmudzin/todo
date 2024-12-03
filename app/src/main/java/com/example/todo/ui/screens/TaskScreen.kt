@@ -117,13 +117,19 @@ fun TaskScreen(
             onDismiss = { isDialogOpen = false },
             onAdd = { newTaskName ->
                 if (newTaskName.isNotBlank()) {
-                    viewModel.shoppingItems.add(
-                        ShoppingItem(name = newTaskName, id = "", complete = false)
+                    viewModel.addItem(
+                        token = token,
+                        itemName = newTaskName,
+                        onSuccess = {
+                            isDialogOpen = false
+                            Log.d("TASK_SCREEN", "Element dodany: $newTaskName")
+                        },
+                        onError = { error ->
+                            Log.e("TASK_SCREEN", "Błąd dodawania elementu: $error")
+                        }
                     )
-                    isDialogOpen = false
                 }
             }
         )
     }
 }
-

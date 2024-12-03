@@ -20,7 +20,7 @@ object ApiClient {
                     .writeTimeout(30, TimeUnit.SECONDS)   // Timeout na zapis
                     .addInterceptor { chain ->
                         val request = chain.request()
-                        Log.d("HTTP_REQUEST", "Wysyłam zapytanie: ${request.url.toString()}")
+                        Log.d("HTTP_REQUEST", "Wysyłam zapytanie: ${request.url}")
                         chain.proceed(request)
                     }
                     .build()
