@@ -1,50 +1,66 @@
 package com.example.todo.viewmodels
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.todo.models.CompleteItemRequest
 import com.example.todo.models.ShoppingItem
 import com.example.todo.network.ApiClient
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.mutableStateListOf
 
 class ShoppingListViewModel : ViewModel() {
-    val shoppingItems = mutableListOf<ShoppingItem>()
+    val shoppingItems = mutableStateListOf<ShoppingItem>()
 
     fun fetchShoppingList(token: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             try {
-                Log.d("FETCH_SHOPPING_LIST", "Wysyłam zapytanie do API")
                 val response = ApiClient.api.getShoppingList("Bearer $token")
-
                 if (response.isSuccessful) {
-                    // Obsługa pustej odpowiedzi
-                    if (response.body() == null || response.body()?.isEmpty() == true) {
-                        Log.e("FETCH_SHOPPING_LIST", "Odpowiedź jest pusta lub null")
-                        onError("Pusta odpowiedź z serwera")
-                        return@launch
-                    }
-
-                    // Przetwarzanie poprawnej odpowiedzi
+                    val items = response.body() ?: emptyList()
                     shoppingItems.clear()
-                    response.body()?.let {
-                        shoppingItems.addAll(it)
-                    }
-                    Log.d("FETCH_SHOPPING_LIST", "Lista zakupów pobrana pomyślnie: ${shoppingItems.size} pozycji")
+                    shoppingItems.addAll(items)
                     onSuccess()
                 } else {
-                    // Obsługa błędów serwera (np. 4xx, 5xx)
-                    val errorBody = response.errorBody()?.string()
-                    Log.e("FETCH_SHOPPING_LIST", "Błąd API: ${response.code()} - ${response.message()} - $errorBody")
                     onError("Error: ${response.code()} - ${response.message()}")
                 }
             } catch (e: Exception) {
-                // Obsługa wyjątków
-                Log.e("FETCH_SHOPPING_LIST", "Wystąpił wyjątek: ${e.localizedMessage}", e)
                 onError("Exception: ${e.localizedMessage}")
             }
         }
     }
 
+    fun toggleItemState(
+        token: String,
+        item: ShoppingItem,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val service = if (item.complete) "incomplete_item" else "complete_item"
 
+                val response = ApiClient.api.sendAction(
+                    authHeader = "Bearer $token",
+                    service = service,
+                    data = CompleteItemRequest(name = item.name)
+                )
 
+                if (response.isSuccessful) {
+                    val index = shoppingItems.indexOfFirst { it.id == item.id }
+                    if (index >= 0) {
+                        // Wymuś aktualizację UI
+                        shoppingItems[index] = item.copy(complete = !item.complete)
+                    }
+                    onSuccess()
+                } else {
+                    onError("Error: ${response.code()} - ${response.message()}")
+                }
+            } catch (e: Exception) {
+                onError("Exception: ${e.localizedMessage}")
+            }
+        }
+    }
 }
+
+
+

@@ -4,68 +4,44 @@ import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.example.todo.components.AddTaskDialog
 import com.example.todo.components.Header
 import com.example.todo.components.TaskItem
+import com.example.todo.models.ShoppingItem
 
 import com.example.todo.viewmodels.ShoppingListViewModel
-
 @Composable
 fun TaskScreen(
     viewModel: ShoppingListViewModel,
     token: String
 ) {
+    var isDialogOpen by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var isDialogOpen by remember { mutableStateOf(false) } // Dodano brakującą zmienną
 
-    // Sprawdzamy token na początku
-    if (token.isBlank()) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("Brak tokena. Podaj poprawny token w kodzie.")
-        }
-        return
-    }
-
-    // Pobieranie danych w LaunchedEffect
     LaunchedEffect(Unit) {
-        try {
-            viewModel.fetchShoppingList(token, {
-                isLoading = false
-            }, { error ->
+        viewModel.fetchShoppingList(
+            token = token,
+            onSuccess = { isLoading = false },
+            onError = { error ->
                 isLoading = false
                 errorMessage = error
-            })
-        } catch (e: Exception) {
-            isLoading = false
-            errorMessage = "Exception: ${e.localizedMessage}"
-            Log.e("TASK_SCREEN", "Wystąpił wyjątek: ${e.localizedMessage}", e)
-        }
+            }
+        )
     }
-
-
-
-
 
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { isDialogOpen = true },
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = CircleShape,
-                modifier = Modifier.size(56.dp)
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -95,10 +71,7 @@ fun TaskScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = errorMessage ?: "Nieznany błąd",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
+                            Text(text = errorMessage ?: "Nieznany błąd")
                         }
                     }
                     viewModel.shoppingItems.isEmpty() -> {
@@ -106,27 +79,33 @@ fun TaskScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = "Brak pozycji. Kliknij '+' aby dodać nowe.",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
+                            Text(text = "Brak pozycji. Kliknij '+' aby dodać nowe.")
                         }
                     }
                     else -> {
                         LazyColumn {
                             items(viewModel.shoppingItems) { item ->
                                 TaskItem(
-                                    task = item, // Bez konwersji
+                                    task = item,
                                     onTaskCheckedChange = { isChecked ->
-                                        item.complete = isChecked // Aktualizujemy pole `complete` bezpośrednio
+                                        Log.d("TASK_SCREEN", "Checkbox clicked: ${item.name}, new state=$isChecked")
+                                        viewModel.toggleItemState(
+                                            token = token,
+                                            item = item,
+                                            onSuccess = {
+                                                Log.d("TASK_SCREEN", "Stan elementu zaktualizowany: ${item.name}")
+                                            },
+                                            onError = { error ->
+                                                Log.e("TASK_SCREEN", "Błąd zmiany stanu: $error")
+                                            }
+                                        )
                                     },
                                     onDelete = {
-                                        viewModel.shoppingItems.remove(item) // Usuwamy element z listy
+                                        viewModel.shoppingItems.remove(item)
                                     }
                                 )
                             }
                         }
-
                     }
                 }
             }
@@ -138,10 +117,13 @@ fun TaskScreen(
             onDismiss = { isDialogOpen = false },
             onAdd = { newTaskName ->
                 if (newTaskName.isNotBlank()) {
-                    // Dodaj do Home Assistant (do zaimplementowania)
+                    viewModel.shoppingItems.add(
+                        ShoppingItem(name = newTaskName, id = "", complete = false)
+                    )
                     isDialogOpen = false
                 }
             }
         )
     }
 }
+

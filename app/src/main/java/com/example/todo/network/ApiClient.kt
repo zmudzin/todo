@@ -7,7 +7,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
-    private const val BASE_URL = "https://ha.losia3.xyz/"
+    private const val BASE_URL = "https://ha.losia3.xyz/" // Upewnij się, że URL jest poprawny
 
     val api: HomeAssistantApi by lazy {
         Retrofit.Builder()
@@ -20,8 +20,7 @@ object ApiClient {
                     .writeTimeout(30, TimeUnit.SECONDS)   // Timeout na zapis
                     .addInterceptor { chain ->
                         val request = chain.request()
-                        // Użycie metody url() zamiast bezpośredniego odwołania do request.url
-                        Log.d("HTTP_REQUEST", "Wysyłam zapytanie: ${request.url()}")
+                        Log.d("HTTP_REQUEST", "Wysyłam zapytanie: ${request.url.toString()}")
                         chain.proceed(request)
                     }
                     .build()

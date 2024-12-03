@@ -1,5 +1,6 @@
 package com.example.todo.components
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -12,7 +13,7 @@ import com.example.todo.models.ShoppingItem
 
 @Composable
 fun TaskItem(
-    task: ShoppingItem, // Używamy `ShoppingItem` zamiast `Task`
+    task: ShoppingItem,
     onTaskCheckedChange: (Boolean) -> Unit,
     onDelete: () -> Unit
 ) {
@@ -23,8 +24,11 @@ fun TaskItem(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Checkbox(
-            checked = task.complete, // Korzystamy z pola `complete`
-            onCheckedChange = onTaskCheckedChange
+            checked = task.complete,
+            onCheckedChange = { isChecked ->
+                Log.d("TASK_ITEM", "Checkbox clicked for ${task.name}: new state=$isChecked")
+                onTaskCheckedChange(isChecked)
+            }
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
@@ -37,4 +41,7 @@ fun TaskItem(
         }
     }
 }
+
+
+
 
