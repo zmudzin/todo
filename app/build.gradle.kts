@@ -1,10 +1,23 @@
+import java.util.Properties
+import java.io.FileInputStream
+
+// Wczytaj token z pliku local.properties
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
+}
+val haToken = localProperties.getProperty("HA_TOKEN") ?: ""
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+
 android {
+
     namespace = "com.example.todo"
     compileSdk = 35
 
@@ -14,10 +27,13 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+        println("Loaded HA_TOKEN: $haToken")
+        buildConfigField("String", "HA_TOKEN", "\"${haToken}\"")
     }
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     composeOptions {

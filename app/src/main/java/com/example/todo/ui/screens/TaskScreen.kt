@@ -13,7 +13,6 @@ import androidx.compose.ui.Modifier
 import com.example.todo.components.AddTaskDialog
 import com.example.todo.components.Header
 import com.example.todo.components.TaskItem
-import com.example.todo.models.ShoppingItem
 
 import com.example.todo.viewmodels.ShoppingListViewModel
 @Composable

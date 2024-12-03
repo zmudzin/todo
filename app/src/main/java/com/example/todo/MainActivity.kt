@@ -14,7 +14,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         Log.d("MAIN_ACTIVITY", "Rozpoczynam onCreate")
 
-        val token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJkNjJmMjEwOGU3MGQ0YzBkYWU1YmRkYzE2MWZhYTEwNyIsImlhdCI6MTczMzI0NDI5MCwiZXhwIjoyMDQ4NjA0MjkwfQ.sFoD5oEnhHtvDZ75kyMNe2vbDy_gziGvauZGUt8qn2I"
+        val token = BuildConfig.HA_TOKEN
 
         setContent {
             Log.d("MAIN_ACTIVITY", "Ustawiam UI")
