@@ -88,7 +88,6 @@ fun TaskScreen(
                                 TaskItem(
                                     task = item,
                                     onTaskCheckedChange = { isChecked ->
-                                        Log.d("TASK_SCREEN", "Checkbox clicked: ${item.name}, new state=$isChecked")
                                         viewModel.toggleItemState(
                                             token = token,
                                             item = item,
@@ -101,9 +100,19 @@ fun TaskScreen(
                                         )
                                     },
                                     onDelete = {
-                                        viewModel.shoppingItems.remove(item)
+                                        viewModel.removeItem(
+                                            token = token,
+                                            itemName = item.name,
+                                            onSuccess = {
+                                                Log.d("TASK_SCREEN", "Element usunięty: ${item.name}")
+                                            },
+                                            onError = { error ->
+                                                Log.e("TASK_SCREEN", "Błąd usuwania: $error")
+                                            }
+                                        )
                                     }
                                 )
+
                             }
                         }
                     }

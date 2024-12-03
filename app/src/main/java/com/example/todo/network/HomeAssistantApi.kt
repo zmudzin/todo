@@ -28,5 +28,10 @@ interface HomeAssistantApi {
         @Header("Authorization") authHeader: String,
         @Body data: AddItemRequest
     ): Response<Unit>
+    @POST("api/services/shopping_list/remove_item")
+    suspend fun removeItem(
+        @Header("Authorization") authHeader: String,
+        @Body data: CompleteItemRequest // Używamy tej samej struktury co dla `CompleteItemRequest`
+    ): Response<Unit>
 
 }

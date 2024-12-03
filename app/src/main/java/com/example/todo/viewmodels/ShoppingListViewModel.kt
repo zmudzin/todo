@@ -89,6 +89,36 @@ class ShoppingListViewModel : ViewModel() {
             }
         }
     }
+    fun removeItem(
+        token: String,
+        itemName: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val response = ApiClient.api.removeItem(
+                    authHeader = "Bearer $token",
+                    data = CompleteItemRequest(name = itemName) // Wymagany JSON z nazwą
+                )
+
+                if (response.isSuccessful) {
+                    // Usuń element z lokalnej listy
+                    val index = shoppingItems.indexOfFirst { it.name == itemName }
+                    if (index >= 0) {
+                        shoppingItems.removeAt(index)
+                    }
+                    onSuccess()
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    onError("Error: ${response.code()} - ${response.message()} - ${errorBody ?: "Brak szczegółów błędu"}")
+                }
+            } catch (e: Exception) {
+                onError("Exception: ${e.localizedMessage}")
+            }
+        }
+    }
+
 
 }
 

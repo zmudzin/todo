@@ -25,10 +25,7 @@ fun TaskItem(
     ) {
         Checkbox(
             checked = task.complete,
-            onCheckedChange = { isChecked ->
-                Log.d("TASK_ITEM", "Checkbox clicked for ${task.name}: new state=$isChecked")
-                onTaskCheckedChange(isChecked)
-            }
+            onCheckedChange = onTaskCheckedChange
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
@@ -36,11 +33,12 @@ fun TaskItem(
             style = MaterialTheme.typography.bodyLarge
         )
         Spacer(modifier = Modifier.weight(1f))
-        IconButton(onClick = onDelete) {
+        IconButton(onClick = onDelete) { // Obsługa usuwania
             Icon(Icons.Default.Delete, contentDescription = "Usuń")
         }
     }
 }
+
 
 
 
