@@ -16,7 +16,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.example.todo.components.AnimatedAddTaskDialog
 import com.example.todo.components.AnimatedEditTaskDialog
-import com.example.todo.components.EditTaskDialog
 import com.example.todo.components.Header
 import com.example.todo.models.ShoppingItem
 import com.example.todo.viewmodels.ShoppingListViewModel
@@ -31,6 +30,10 @@ fun TaskScreen(
     var taskToEdit by remember { mutableStateOf<ShoppingItem?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Podział zadań na aktywne i ukończone
+    val activeTasks = viewModel.shoppingItems.filter { !it.complete }
+    val completedTasks = viewModel.shoppingItems.filter { it.complete }
 
     LaunchedEffect(Unit) {
         viewModel.fetchShoppingList(
@@ -48,13 +51,13 @@ fun TaskScreen(
             FloatingActionButton(
                 onClick = { isDialogOpen = true },
                 modifier = Modifier
-                    .size(88.dp) // Rozmiar przycisku
-                    .padding(16.dp) // Odstęp od krawędzi ekranu
-                    .clip(RoundedCornerShape(50)) // Wymuszony okrągły kształt
+                    .size(88.dp)
+                    .padding(16.dp)
+                    .clip(RoundedCornerShape(50))
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = null // Treść dla dostępności
+                    contentDescription = null
                 )
             }
         },
@@ -62,7 +65,7 @@ fun TaskScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues) // Padding kontrolowany przez Scaffold
+                    .padding(paddingValues)
             ) {
                 Header(
                     title = "Twoje zadania",
@@ -83,7 +86,7 @@ fun TaskScreen(
                     isLoading -> {
                         Box(
                             modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center // Wyrównanie centralne przez Alignment
+                            contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator()
                         }
@@ -106,38 +109,92 @@ fun TaskScreen(
                     }
                     else -> {
                         LazyColumn {
-                            items(viewModel.shoppingItems) { item ->
-                                AnimatedTaskItem(
-                                    task = item,
-                                    onTaskCheckedChange = { isChecked ->
-                                        viewModel.toggleItemState(
-                                            token = token,
-                                            item = item,
-                                            onSuccess = {
-                                                Log.d("TASK_SCREEN", "Stan elementu zaktualizowany: ${item.name}")
-                                            },
-                                            onError = { error ->
-                                                Log.e("TASK_SCREEN", "Błąd zmiany stanu: $error")
-                                            }
-                                        )
-                                    },
-                                    onDelete = {
-                                        viewModel.removeItem(
-                                            token = token,
-                                            itemName = item.name,
-                                            onSuccess = {
-                                                Log.d("TASK_SCREEN", "Element usunięty: ${item.name}")
-                                            },
-                                            onError = { error ->
-                                                Log.e("TASK_SCREEN", "Błąd usuwania: $error")
-                                            }
-                                        )
-                                    },
-                                    onEdit = {
-                                        taskToEdit = item
-                                        isEditDialogOpen = true
-                                    }
-                                )
+                            // Sekcja aktywnych zadań
+                            if (activeTasks.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        text = "Aktywne",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        modifier = Modifier.padding(8.dp)
+                                    )
+                                }
+                                items(activeTasks) { item ->
+                                    AnimatedTaskItem(
+                                        task = item,
+                                        onTaskCheckedChange = { isChecked ->
+                                            viewModel.toggleItemState(
+                                                token = token,
+                                                item = item,
+                                                onSuccess = {
+                                                    Log.d("TASK_SCREEN", "Stan elementu zaktualizowany: ${item.name}")
+                                                },
+                                                onError = { error ->
+                                                    Log.e("TASK_SCREEN", "Błąd zmiany stanu: $error")
+                                                }
+                                            )
+                                        },
+                                        onDelete = {
+                                            viewModel.removeItem(
+                                                token = token,
+                                                itemName = item.name,
+                                                onSuccess = {
+                                                    Log.d("TASK_SCREEN", "Element usunięty: ${item.name}")
+                                                },
+                                                onError = { error ->
+                                                    Log.e("TASK_SCREEN", "Błąd usuwania: $error")
+                                                }
+                                            )
+                                        },
+                                        onEdit = {
+                                            taskToEdit = item
+                                            isEditDialogOpen = true
+                                        }
+                                    )
+                                }
+                            }
+
+                            // Sekcja ukończonych zadań
+                            if (completedTasks.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        text = "Ukończone",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        modifier = Modifier.padding(8.dp)
+                                    )
+                                }
+                                items(completedTasks) { item ->
+                                    AnimatedTaskItem(
+                                        task = item,
+                                        onTaskCheckedChange = { isChecked ->
+                                            viewModel.toggleItemState(
+                                                token = token,
+                                                item = item,
+                                                onSuccess = {
+                                                    Log.d("TASK_SCREEN", "Stan elementu zaktualizowany: ${item.name}")
+                                                },
+                                                onError = { error ->
+                                                    Log.e("TASK_SCREEN", "Błąd zmiany stanu: $error")
+                                                }
+                                            )
+                                        },
+                                        onDelete = {
+                                            viewModel.removeItem(
+                                                token = token,
+                                                itemName = item.name,
+                                                onSuccess = {
+                                                    Log.d("TASK_SCREEN", "Element usunięty: ${item.name}")
+                                                },
+                                                onError = { error ->
+                                                    Log.e("TASK_SCREEN", "Błąd usuwania: $error")
+                                                }
+                                            )
+                                        },
+                                        onEdit = {
+                                            taskToEdit = item
+                                            isEditDialogOpen = true
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -146,6 +203,7 @@ fun TaskScreen(
         }
     )
 
+    // Obsługa dialogu dodawania
     if (isDialogOpen) {
         AnimatedAddTaskDialog(
             isVisible = isDialogOpen,
@@ -168,6 +226,7 @@ fun TaskScreen(
         )
     }
 
+    // Obsługa dialogu edycji
     if (isEditDialogOpen && taskToEdit != null) {
         AnimatedEditTaskDialog(
             isVisible = isEditDialogOpen,
