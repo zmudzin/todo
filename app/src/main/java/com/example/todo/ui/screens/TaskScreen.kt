@@ -11,16 +11,20 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.example.todo.components.AddTaskDialog
+import com.example.todo.components.EditTaskDialog
 import com.example.todo.components.Header
 import com.example.todo.components.TaskItem
-
+import com.example.todo.models.ShoppingItem
 import com.example.todo.viewmodels.ShoppingListViewModel
+
 @Composable
 fun TaskScreen(
     viewModel: ShoppingListViewModel,
     token: String
 ) {
     var isDialogOpen by remember { mutableStateOf(false) }
+    var isEditDialogOpen by remember { mutableStateOf(false) }
+    var taskToEdit by remember { mutableStateOf<ShoppingItem?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -54,7 +58,20 @@ fun TaskScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                Header(title = "Twoje zadania")
+                Header(
+                    title = "Twoje zadania",
+                    onRefresh = {
+                        isLoading = true
+                        viewModel.fetchShoppingList(
+                            token = token,
+                            onSuccess = { isLoading = false },
+                            onError = { error ->
+                                isLoading = false
+                                errorMessage = error
+                            }
+                        )
+                    }
+                )
 
                 when {
                     isLoading -> {
@@ -109,9 +126,12 @@ fun TaskScreen(
                                                 Log.e("TASK_SCREEN", "Błąd usuwania: $error")
                                             }
                                         )
+                                    },
+                                    onEdit = {
+                                        taskToEdit = item
+                                        isEditDialogOpen = true
                                     }
                                 )
-
                             }
                         }
                     }
@@ -120,6 +140,7 @@ fun TaskScreen(
         }
     )
 
+    // Obsługa dialogu dodawania
     if (isDialogOpen) {
         AddTaskDialog(
             onDismiss = { isDialogOpen = false },
@@ -137,6 +158,28 @@ fun TaskScreen(
                         }
                     )
                 }
+            }
+        )
+    }
+
+    // Obsługa dialogu edycji
+    if (isEditDialogOpen && taskToEdit != null) {
+        EditTaskDialog(
+            currentName = taskToEdit!!.name,
+            onDismiss = { isEditDialogOpen = false },
+            onSave = { newName ->
+                viewModel.editItem(
+                    token = token,
+                    oldName = taskToEdit!!.name,
+                    newName = newName,
+                    onSuccess = {
+                        isEditDialogOpen = false
+                        Log.d("TASK_SCREEN", "Zadanie zaktualizowane: $newName")
+                    },
+                    onError = { error ->
+                        Log.e("TASK_SCREEN", "Błąd edycji zadania: $error")
+                    }
+                )
             }
         )
     }

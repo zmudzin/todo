@@ -1,32 +1,29 @@
 package com.example.todo
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.*
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.ViewModelProvider
+import com.example.todo.network.ApiClient
+import com.example.todo.repository.ShoppingRepository
 import com.example.todo.ui.screens.TaskScreen
 import com.example.todo.viewmodels.ShoppingListViewModel
+import com.example.todo.viewmodels.ShoppingViewModelFactory
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) { // Poprawiony brak 'savedInstanceState'
         super.onCreate(savedInstanceState)
-        Log.d("MAIN_ACTIVITY", "Rozpoczynam onCreate")
 
-        val token = BuildConfig.HA_TOKEN
+        // Inicjalizacja repository i viewmodel
+        val repository = ShoppingRepository(ApiClient.api)
+        val viewModel: ShoppingListViewModel = ViewModelProvider(
+            this,
+            ShoppingViewModelFactory(repository)
+        )[ShoppingListViewModel::class.java]
 
+        // Ustawienie UI
         setContent {
-            Log.d("MAIN_ACTIVITY", "Ustawiam UI")
-            MaterialTheme {
-                val viewModel: ShoppingListViewModel = viewModel()
-                TaskScreen(viewModel = viewModel, token = token)
-            }
+            TaskScreen(viewModel = viewModel, token = BuildConfig.HA_TOKEN)
         }
-        Log.d("MAIN_ACTIVITY", "Zakończyłem onCreate")
     }
-
 }
-
-
-

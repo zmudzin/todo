@@ -1,6 +1,7 @@
 package com.example.todo.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
@@ -14,7 +15,8 @@ import com.example.todo.models.ShoppingItem
 fun TaskItem(
     task: ShoppingItem,
     onTaskCheckedChange: (Boolean) -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: (String) -> Unit // Nowy parametr do edycji zadania
 ) {
     Row(
         modifier = Modifier
@@ -29,10 +31,12 @@ fun TaskItem(
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = task.name,
-            style = MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier
+                .weight(1f)
+                .clickable { onEdit(task.name) } // Otwórz dialog edycji
         )
-        Spacer(modifier = Modifier.weight(1f))
-        IconButton(onClick = onDelete) { // Obsługa usuwania
+        IconButton(onClick = onDelete) {
             Icon(Icons.Default.Delete, contentDescription = "Usuń")
         }
     }

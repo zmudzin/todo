@@ -1,21 +1,19 @@
 package com.example.todo.viewmodels
 
+import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.todo.models.CompleteItemRequest
 import com.example.todo.models.ShoppingItem
-import com.example.todo.network.ApiClient
+import com.example.todo.repository.ShoppingRepository
 import kotlinx.coroutines.launch
-import androidx.compose.runtime.mutableStateListOf
-import com.example.todo.models.AddItemRequest
 
-class ShoppingListViewModel : ViewModel() {
+class ShoppingListViewModel(private val repository: ShoppingRepository) : ViewModel() {
     val shoppingItems = mutableStateListOf<ShoppingItem>()
 
     fun fetchShoppingList(token: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             try {
-                val response = ApiClient.api.getShoppingList("Bearer $token")
+                val response = repository.fetchShoppingList(token)
                 if (response.isSuccessful) {
                     val items = response.body() ?: emptyList()
                     shoppingItems.clear()
@@ -39,22 +37,65 @@ class ShoppingListViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val service = if (item.complete) "incomplete_item" else "complete_item"
-
-                val response = ApiClient.api.sendAction(
-                    authHeader = "Bearer $token",
-                    service = service,
-                    data = CompleteItemRequest(name = item.name)
-                )
+                val response = repository.toggleItemState(token, service, item.name)
 
                 if (response.isSuccessful) {
                     val index = shoppingItems.indexOfFirst { it.id == item.id }
                     if (index >= 0) {
-                        // Wymuś aktualizację UI
                         shoppingItems[index] = item.copy(complete = !item.complete)
                     }
                     onSuccess()
                 } else {
                     onError("Error: ${response.code()} - ${response.message()}")
+                }
+            } catch (e: Exception) {
+                onError("Exception: ${e.localizedMessage}")
+            }
+        }
+    }
+
+    fun removeItem(
+        token: String,
+        itemName: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val response = repository.removeItem(token, itemName)
+
+                if (response.isSuccessful) {
+                    val index = shoppingItems.indexOfFirst { it.name == itemName }
+                    if (index >= 0) {
+                        shoppingItems.removeAt(index)
+                    }
+                    onSuccess()
+                } else {
+                    onError("Error: ${response.code()} - ${response.message()}")
+                }
+            } catch (e: Exception) {
+                onError("Exception: ${e.localizedMessage}")
+            }
+        }
+    }
+    fun editItem(
+        token: String,
+        oldName: String,
+        newName: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val success = repository.editItemOnServer(token, oldName, newName)
+                if (success) {
+                    val index = shoppingItems.indexOfFirst { it.name == oldName }
+                    if (index >= 0) {
+                        shoppingItems[index] = shoppingItems[index].copy(name = newName)
+                    }
+                    onSuccess()
+                } else {
+                    onError("Edycja nie powiodła się")
                 }
             } catch (e: Exception) {
                 onError("Exception: ${e.localizedMessage}")
@@ -69,49 +110,11 @@ class ShoppingListViewModel : ViewModel() {
     ) {
         viewModelScope.launch {
             try {
-                val response = ApiClient.api.addItem(
-                    authHeader = "Bearer $token",
-                    data = AddItemRequest(name = itemName)
-                )
-
+                val response = repository.addItem(token, itemName)
                 if (response.isSuccessful) {
-                    // Pobierz zaktualizowaną listę po dodaniu elementu
-                    fetchShoppingList(
-                        token = token,
-                        onSuccess = onSuccess,
-                        onError = onError
-                    )
+                    fetchShoppingList(token, onSuccess, onError)
                 } else {
                     onError("Error: ${response.code()} - ${response.message()}")
-                }
-            } catch (e: Exception) {
-                onError("Exception: ${e.localizedMessage}")
-            }
-        }
-    }
-    fun removeItem(
-        token: String,
-        itemName: String,
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit
-    ) {
-        viewModelScope.launch {
-            try {
-                val response = ApiClient.api.removeItem(
-                    authHeader = "Bearer $token",
-                    data = CompleteItemRequest(name = itemName) // Wymagany JSON z nazwą
-                )
-
-                if (response.isSuccessful) {
-                    // Usuń element z lokalnej listy
-                    val index = shoppingItems.indexOfFirst { it.name == itemName }
-                    if (index >= 0) {
-                        shoppingItems.removeAt(index)
-                    }
-                    onSuccess()
-                } else {
-                    val errorBody = response.errorBody()?.string()
-                    onError("Error: ${response.code()} - ${response.message()} - ${errorBody ?: "Brak szczegółów błędu"}")
                 }
             } catch (e: Exception) {
                 onError("Exception: ${e.localizedMessage}")
@@ -121,7 +124,3 @@ class ShoppingListViewModel : ViewModel() {
 
 
 }
-
-
-
-
