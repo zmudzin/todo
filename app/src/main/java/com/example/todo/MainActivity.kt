@@ -7,11 +7,12 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.todo.network.ApiClient
 import com.example.todo.repository.ShoppingRepository
 import com.example.todo.ui.screens.TaskScreen
+import com.example.todo.ui.theme.ToDoAppTheme // Dodaj import motywu
 import com.example.todo.viewmodels.ShoppingListViewModel
 import com.example.todo.viewmodels.ShoppingViewModelFactory
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) { // Poprawiony brak 'savedInstanceState'
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         // Inicjalizacja repository i viewmodel
@@ -21,9 +22,11 @@ class MainActivity : ComponentActivity() {
             ShoppingViewModelFactory(repository)
         )[ShoppingListViewModel::class.java]
 
-        // Ustawienie UI
+        // Ustawienie UI z motywem
         setContent {
-            TaskScreen(viewModel = viewModel, token = BuildConfig.HA_TOKEN)
+            ToDoAppTheme { // Zastosowanie motywu
+                TaskScreen(viewModel = viewModel, token = BuildConfig.HA_TOKEN)
+            }
         }
     }
 }

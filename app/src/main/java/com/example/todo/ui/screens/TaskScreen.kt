@@ -1,19 +1,23 @@
 package com.example.todo.ui.screens
 
+import AnimatedTaskItem
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.example.todo.components.AddTaskDialog
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
+import com.example.todo.components.AnimatedAddTaskDialog
+import com.example.todo.components.AnimatedEditTaskDialog
 import com.example.todo.components.EditTaskDialog
 import com.example.todo.components.Header
-import com.example.todo.components.TaskItem
 import com.example.todo.models.ShoppingItem
 import com.example.todo.viewmodels.ShoppingListViewModel
 
@@ -43,12 +47,14 @@ fun TaskScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { isDialogOpen = true },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                modifier = Modifier
+                    .size(88.dp) // Rozmiar przycisku
+                    .padding(16.dp) // Odstęp od krawędzi ekranu
+                    .clip(RoundedCornerShape(50)) // Wymuszony okrągły kształt
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Dodaj zadanie"
+                    contentDescription = null // Treść dla dostępności
                 )
             }
         },
@@ -56,7 +62,7 @@ fun TaskScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
+                    .padding(paddingValues) // Padding kontrolowany przez Scaffold
             ) {
                 Header(
                     title = "Twoje zadania",
@@ -77,7 +83,7 @@ fun TaskScreen(
                     isLoading -> {
                         Box(
                             modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
+                            contentAlignment = Alignment.Center // Wyrównanie centralne przez Alignment
                         ) {
                             CircularProgressIndicator()
                         }
@@ -101,7 +107,7 @@ fun TaskScreen(
                     else -> {
                         LazyColumn {
                             items(viewModel.shoppingItems) { item ->
-                                TaskItem(
+                                AnimatedTaskItem(
                                     task = item,
                                     onTaskCheckedChange = { isChecked ->
                                         viewModel.toggleItemState(
@@ -140,9 +146,9 @@ fun TaskScreen(
         }
     )
 
-    // Obsługa dialogu dodawania
     if (isDialogOpen) {
-        AddTaskDialog(
+        AnimatedAddTaskDialog(
+            isVisible = isDialogOpen,
             onDismiss = { isDialogOpen = false },
             onAdd = { newTaskName ->
                 if (newTaskName.isNotBlank()) {
@@ -162,9 +168,9 @@ fun TaskScreen(
         )
     }
 
-    // Obsługa dialogu edycji
     if (isEditDialogOpen && taskToEdit != null) {
-        EditTaskDialog(
+        AnimatedEditTaskDialog(
+            isVisible = isEditDialogOpen,
             currentName = taskToEdit!!.name,
             onDismiss = { isEditDialogOpen = false },
             onSave = { newName ->
