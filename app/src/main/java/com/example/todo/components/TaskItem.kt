@@ -55,10 +55,9 @@ fun TaskItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .shadow(4.dp, RoundedCornerShape(8.dp))
-            .background(Color.White, RoundedCornerShape(8.dp))
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 2.dp) // Mniejsze odstępy zewnętrzne
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(4.dp)) // Mniejszy zaokrąglony kształt
+            .padding(horizontal = 8.dp, vertical = 4.dp) // Mniejszy padding wewnętrzny
             .clickable { onEdit(task.name) },
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -66,28 +65,36 @@ fun TaskItem(
         Checkbox(
             checked = task.complete,
             onCheckedChange = onTaskCheckedChange,
-            modifier = Modifier.padding(end = 8.dp)
+            modifier = Modifier.padding(end = 4.dp), // Mniejszy odstęp
+            colors = CheckboxDefaults.colors(
+                checkedColor = MaterialTheme.colorScheme.primary, // Kolor zaznaczonego checkboxa
+                uncheckedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), // Kolor niezaznaczonego
+                checkmarkColor = MaterialTheme.colorScheme.onPrimary // Kolor znaku zaznaczenia
+            )
         )
 
         // Tekst zadania
         Text(
             text = task.name,
             modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodySmall, // Użycie mniejszej typografii
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            color = MaterialTheme.colorScheme.onSurface // Kolor tekstu
         )
 
         // Ikona kosza po prawej stronie
         IconButton(
             onClick = onDelete,
-            modifier = Modifier.padding(start = 8.dp)
+            modifier = Modifier.size(20.dp) // Zmniejszony rozmiar ikony
         ) {
             Icon(
                 imageVector = Icons.Default.Delete,
                 contentDescription = "Usuń",
-                tint = MaterialTheme.colorScheme.secondary
+                tint = MaterialTheme.colorScheme.onBackground // Kolor ikony kosza
             )
         }
     }
 }
+
+

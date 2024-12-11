@@ -17,10 +17,11 @@ fun TaskContent(
     onRefresh: () -> Unit,
     onEditTask: (ShoppingItem) -> Unit,
     onDeleteTask: (ShoppingItem) -> Unit,
-    onToggleTaskState: (ShoppingItem) -> Unit
+    onToggleTaskState: (ShoppingItem) -> Unit,
+    onSearch: (String) -> Unit // Dodano parametr onSearch
 ) {
     Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-        Header(title = "Twoje zadania", onRefresh = onRefresh)
+        Header(onSearch = onSearch, onRefresh = onRefresh) // Zmiana wywołania Header na HeaderWithSearch
 
         when {
             isLoading -> {

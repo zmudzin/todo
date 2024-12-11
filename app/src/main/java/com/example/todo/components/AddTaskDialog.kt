@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+
 
 @Composable
 fun AddTaskDialog(onDismiss: () -> Unit, onAdd: (String) -> Unit) {
@@ -17,42 +19,77 @@ fun AddTaskDialog(onDismiss: () -> Unit, onAdd: (String) -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Dodaj nowe zadanie") // Wygląd tekstu przejdzie przez `theme`
+            Text(
+                text = "Dodaj nowe zadanie",
+                color = MaterialTheme.colorScheme.onSurface, // Kolor nagłówka
+                style = MaterialTheme.typography.titleLarge // Styl nagłówka
+            )
         },
         text = {
             TextField(
                 value = taskName,
                 onValueChange = { taskName = it },
-                placeholder = { Text("Wpisz nazwę zadania") }, // Wygląd placeholdera również przez `theme`
-                modifier = Modifier.fillMaxWidth()
+                placeholder = {
+                    Text(
+                        text = "Wpisz nazwę zadania",
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f) // Placeholder
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+                    cursorColor = MaterialTheme.colorScheme.primary,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                    unfocusedIndicatorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                )
             )
         },
         confirmButton = {
-            Button(onClick = {
-                onAdd(taskName)
-                taskName = ""
-            }) {
-                Text("Dodaj") // Wygląd tekstu przycisku przejdzie przez `theme`
+            Button(
+                onClick = {
+                    if (taskName.isNotBlank()) {
+                        onAdd(taskName)
+                        taskName = ""
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
+                )
+            ) {
+                Text("Dodaj")
             }
         },
         dismissButton = {
-            Button(onClick = onDismiss) {
-                Text("Anuluj") // Wygląd tekstu przycisku przejdzie przez `theme`
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
+                )
+            ) {
+                Text("Anuluj")
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.surface, // Tło dialogu
     )
 }
-    @Composable
-    fun AnimatedAddTaskDialog(
-        isVisible: Boolean,
-        onDismiss: () -> Unit,
-        onAdd: (String) -> Unit
+
+@Composable
+fun AnimatedAddTaskDialog(
+    isVisible: Boolean,
+    onDismiss: () -> Unit,
+    onAdd: (String) -> Unit
+) {
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically()
     ) {
-        AnimatedVisibility(
-            visible = isVisible,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
-        ) {
-            AddTaskDialog(onDismiss = onDismiss, onAdd = onAdd)
-        }
+        AddTaskDialog(onDismiss = onDismiss, onAdd = onAdd)
     }
+}
+

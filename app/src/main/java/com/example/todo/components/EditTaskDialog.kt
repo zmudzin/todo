@@ -21,38 +21,66 @@ fun EditTaskDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Edytuj zadanie") // Wygląd tytułu zarządzany przez `theme`
+            Text(
+                text = "Edytuj zadanie",
+                color = MaterialTheme.colorScheme.onSurface, // Kolor tekstu z motywu
+                style = MaterialTheme.typography.titleLarge // Styl nagłówka
+            )
         },
         text = {
             TextField(
                 value = taskName,
                 onValueChange = { taskName = it },
                 placeholder = {
-                    Text("Zmień treść zadania") // Wygląd placeholdera zarządzany przez `theme`
+                    Text(
+                        text = "Zmień treść zadania",
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f) // Kolor placeholdera
+                    )
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+                    cursorColor = MaterialTheme.colorScheme.primary,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                    unfocusedIndicatorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                )
             )
         },
         confirmButton = {
-            Button(onClick = {
-                if (taskName.isNotBlank()) {
-                    onSave(taskName) // Przekazuje zmienioną nazwę
-                } else {
-                    onDismiss() // Zamknij dialog, jeśli pole jest puste
-                }
-            }) {
-                Text("Zapisz") // Wygląd tekstu przycisku zarządzany przez `theme`
+            Button(
+                onClick = {
+                    if (taskName.isNotBlank()) {
+                        onSave(taskName)
+                    } else {
+                        onDismiss()
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
+                )
+            ) {
+                Text("Zapisz")
             }
         },
         dismissButton = {
-            Button(onClick = onDismiss) {
-                Text("Anuluj") // Wygląd tekstu przycisku zarządzany przez `theme`
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
+                )
+            ) {
+                Text("Anuluj")
             }
-        }
-
+        },
+        containerColor = MaterialTheme.colorScheme.surface // Tło dialogu
     )
-
 }
+
 @Composable
 fun AnimatedEditTaskDialog(
     isVisible: Boolean,

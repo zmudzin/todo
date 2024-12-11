@@ -4,15 +4,20 @@ import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
 import com.example.todo.components.*
 import com.example.todo.viewmodels.ShoppingListViewModel
 import com.example.todo.models.ShoppingItem
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.lazy.LazyColumn
 
 @Composable
 fun TaskScreen(viewModel: ShoppingListViewModel, token: String) {
@@ -21,9 +26,15 @@ fun TaskScreen(viewModel: ShoppingListViewModel, token: String) {
     var taskToEdit by remember { mutableStateOf<ShoppingItem?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showRefreshButton by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
 
-    val activeTasks = viewModel.shoppingItems.filter { !it.complete }
-    val completedTasks = viewModel.shoppingItems.filter { it.complete }
+    val filteredActiveTasks = viewModel.shoppingItems.filter {
+        it.name.contains(searchQuery, ignoreCase = true) && !it.complete
+    }
+    val filteredCompletedTasks = viewModel.shoppingItems.filter {
+        it.name.contains(searchQuery, ignoreCase = true) && it.complete
+    }
 
     LaunchedEffect(Unit) {
         viewModel.fetchShoppingList(
@@ -35,33 +46,107 @@ fun TaskScreen(viewModel: ShoppingListViewModel, token: String) {
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { isDialogOpen = true },
-                modifier = Modifier
-                    .size(88.dp)
-                    .padding(16.dp)
-                    .clip(RoundedCornerShape(50))
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.End,
+                modifier = Modifier.padding(end = 16.dp, bottom = 16.dp)
             ) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = null)
+                if (showRefreshButton) {
+                    FloatingActionButton(
+                        onClick = {
+                            isLoading = true
+                            viewModel.fetchShoppingList(
+                                token = token,
+                                onSuccess = { isLoading = false },
+                                onError = { error -> errorMessage = error }
+                            )
+                            showRefreshButton = false
+                        },
+                        modifier = Modifier
+                            .size(58.dp)
+                            .clip(RoundedCornerShape(50)),
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = MaterialTheme.colorScheme.onSecondary
+                    ) {
+                        Icon(imageVector = Icons.Default.Refresh, contentDescription = "Odśwież")
+                    }
+                }
+
+                FloatingActionButton(
+                    onClick = { isDialogOpen = true },
+                    modifier = Modifier
+                        .size(58.dp)
+                        .clip(RoundedCornerShape(50))
+                        .pointerInput(Unit) {
+                            detectVerticalDragGestures(
+                                onVerticalDrag = { _, dragAmount ->
+                                    if (dragAmount < -50) {
+                                        showRefreshButton = true
+                                    }
+                                }
+                            )
+                        },
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary
+                ) {
+                    Icon(imageVector = Icons.Default.Add, contentDescription = "Dodaj zadanie")
+                }
             }
         }
     ) { paddingValues ->
-        TaskContent(
-            activeTasks = activeTasks,
-            completedTasks = completedTasks,
-            isLoading = isLoading,
-            errorMessage = errorMessage,
-            paddingValues = paddingValues,
-            onRefresh = {
-                isLoading = true
-                viewModel.fetchShoppingList(token, { isLoading = false }, { error -> errorMessage = error })
-            },
-            onEditTask = { taskToEdit = it; isEditDialogOpen = true },
-            onDeleteTask = { task -> viewModel.removeItem(token, task.name, {}, {}) },
-            onToggleTaskState = { task ->
-                viewModel.toggleItemState(token, task, {}, { error -> Log.e("TASK_SCREEN", error) })
+        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            Header(
+                onSearch = { query -> searchQuery = query },
+                onRefresh = {
+                    isLoading = true
+                    viewModel.fetchShoppingList(
+                        token,
+                        onSuccess = { isLoading = false },
+                        onError = { error -> errorMessage = error }
+                    )
+                }
+            )
+
+            when {
+                isLoading -> {
+                    LoadingIndicator()
+                }
+                errorMessage != null -> {
+                    ErrorMessage(message = errorMessage ?: "Unknown error occurred")
+                }
+                filteredActiveTasks.isEmpty() && filteredCompletedTasks.isEmpty() -> {
+                    EmptyListMessage()
+                }
+                else -> {
+                    LazyColumn {
+                        taskSection("Aktywne", filteredActiveTasks, {
+                            taskToEdit = it; isEditDialogOpen = true
+                        }, {
+                            viewModel.removeItem(token, it.name, {}, {})
+                        }, {
+                            viewModel.toggleItemState(
+                                token,
+                                it,
+                                onSuccess = {},
+                                onError = { error -> Log.e("TASK_SCREEN", error) }
+                            )
+                        })
+                        taskSection("Ukończone", filteredCompletedTasks, {
+                            taskToEdit = it; isEditDialogOpen = true
+                        }, {
+                            viewModel.removeItem(token, it.name, {}, {})
+                        }, {
+                            viewModel.toggleItemState(
+                                token,
+                                it,
+                                onSuccess = {},
+                                onError = { error -> Log.e("TASK_SCREEN", error) }
+                            )
+                        })
+                    }
+                }
             }
-        )
+        }
     }
 
     if (isDialogOpen) {
@@ -72,8 +157,8 @@ fun TaskScreen(viewModel: ShoppingListViewModel, token: String) {
                 viewModel.addItem(
                     token = token,
                     itemName = taskName,
-                    { isDialogOpen = false },
-                    { error -> Log.e("TASK_SCREEN", error) }
+                    onSuccess = { isDialogOpen = false },
+                    onError = { error -> Log.e("TASK_SCREEN", error) }
                 )
             }
         )
@@ -89,8 +174,8 @@ fun TaskScreen(viewModel: ShoppingListViewModel, token: String) {
                     token = token,
                     oldName = taskToEdit!!.name,
                     newName = newName,
-                    { isEditDialogOpen = false },
-                    { error -> Log.e("TASK_SCREEN", error) }
+                    onSuccess = { isEditDialogOpen = false },
+                    onError = { error -> Log.e("TASK_SCREEN", error) }
                 )
             }
         )
