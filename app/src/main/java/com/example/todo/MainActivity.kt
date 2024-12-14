@@ -7,7 +7,6 @@ import com.example.todo.ui.theme.ToDoAppTheme
 import com.example.todo.ui.screens.TaskScreen
 
 
-
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

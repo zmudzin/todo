@@ -14,10 +14,10 @@ import androidx.compose.ui.unit.dp
 fun Header(title: String) {
     Text(
         text = title,
-        color = MaterialTheme.colorScheme.onPrimary,
+        color = MaterialTheme.colorScheme.primary,
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.primary)
+            .background(MaterialTheme.colorScheme.onPrimary)
             .padding(16.dp),
         style = MaterialTheme.typography.titleLarge,
         textAlign = TextAlign.Center

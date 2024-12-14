@@ -20,17 +20,17 @@ fun TaskItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
+            .padding(2.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        shape = RoundedCornerShape(8.dp),
-        elevation = CardDefaults.cardElevation(8.dp)
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                ,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
@@ -40,7 +40,7 @@ fun TaskItem(
                     checked = task.isChecked,
                     onCheckedChange = onTaskCheckedChange
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = task.name,
                     style = MaterialTheme.typography.bodyLarge
