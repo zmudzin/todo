@@ -1,5 +1,7 @@
 package com.example.todo.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -15,10 +17,12 @@ import com.example.todo.models.Task
 fun TaskItem(
     task: Task,
     onTaskCheckedChange: (Boolean) -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit, // Callback do edycji zadania
+    modifier: Modifier = Modifier // Możliwość modyfikacji zewnętrznej
 ) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(2.dp),
         colors = CardDefaults.cardColors(
@@ -28,24 +32,26 @@ fun TaskItem(
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                ,
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Checkbox(
-                    checked = task.isChecked,
-                    onCheckedChange = onTaskCheckedChange
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = task.name,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
+            // Checkbox do zaznaczania zadania
+            Checkbox(
+                checked = task.isChecked,
+                onCheckedChange = onTaskCheckedChange
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Klikalny tekst zadania, otwierający dialog edycji
+            Text(
+                text = task.name,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onEdit() } // Wywołanie funkcji edycji
+            )
+
+            // Ikona do usuwania zadania
             IconButton(onClick = onDelete) {
                 Icon(
                     imageVector = Icons.Default.Delete,
