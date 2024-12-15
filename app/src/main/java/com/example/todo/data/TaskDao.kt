@@ -29,4 +29,7 @@ interface TaskDao {
 
     @Query("DELETE FROM tasks WHERE isChecked = 1")
     suspend fun deleteAllCompletedTasks()
+
+    @Query("SELECT COUNT(*) FROM tasks WHERE isChecked = 1")
+    suspend fun getCompletedTaskCount(): Int
     }

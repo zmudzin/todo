@@ -12,6 +12,7 @@ class TaskRepository(private val taskDao: TaskDao) {
     suspend fun deleteTask(task: Task) = taskDao.deleteTask(task)
     suspend fun updateTaskPosition(taskId: String, position: Int) = taskDao.updateTaskPosition(taskId, position)
     suspend fun getTaskCount(): Int = taskDao.getTaskCount()
-    suspend fun deleteAllCompletedTasks() {taskDao.deleteAllCompletedTasks()
+    suspend fun deleteAllCompletedTasks() {taskDao.deleteAllCompletedTasks() }
+    suspend fun getCompletedTaskCount(): Int {return taskDao.getCompletedTaskCount()
     }
 }
