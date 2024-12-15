@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.todo.components.AddTaskDialog
+import com.example.todo.components.AddTaskFAB
 import com.example.todo.components.EditTaskDialog
 import com.example.todo.components.Header
 import com.example.todo.components.TaskItem
@@ -79,18 +80,7 @@ fun TaskScreen() {
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { isDialogOpen = true },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = CircleShape,
-                modifier = Modifier.size(56.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Dodaj zadanie"
-                )
-            }
+            AddTaskFAB(onClick = { isDialogOpen = true })
         },
         content = { paddingValues ->
             Column(
