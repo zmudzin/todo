@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import com.example.todo.components.AddTaskDialog
 import com.example.todo.components.AddTaskFAB
 import com.example.todo.components.EditTaskDialog
+import com.example.todo.components.ExtendedFAB
 import com.example.todo.components.Header
 import com.example.todo.components.TaskItem
 import com.example.todo.data.TaskRepository
@@ -65,8 +66,19 @@ fun TaskScreen(taskRepository: TaskRepository) {
         }
     }
 
+
     Scaffold(
-        floatingActionButton = { AddTaskFAB(onClick = { isDialogOpen = true }) },
+        floatingActionButton = {
+            ExtendedFAB(
+                onAddTaskClick = { isDialogOpen = true },
+                onDeleteCompletedClick = {
+                    scope.launch {
+                        taskRepository.deleteAllCompletedTasks()
+                    }
+                },
+                hasCompletedTasks = completedTasks.isNotEmpty() // Sprawdzanie, czy są ukończone zadania
+            )
+        },
         content = { paddingValues ->
             Column(
                 modifier = Modifier
@@ -125,17 +137,15 @@ fun TaskScreen(taskRepository: TaskRepository) {
             }
         )
     }
-
-    editingTask?.let { task ->
+    if (editingTask != null) {
         EditTaskDialog(
-            initialTaskName = task.name,
+            initialTaskName = editingTask!!.name,
             onDismiss = { editingTask = null },
             onEdit = { newName ->
-                if (newName.isNotBlank()) {
-                    onTaskEdit(task, newName)
-                }
+                onTaskEdit(editingTask!!, newName)
                 editingTask = null
             }
         )
     }
+
 }
