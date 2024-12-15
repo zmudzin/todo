@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -77,6 +78,11 @@ fun TaskScreen() {
         editingTask = null
     }
 
+    // Funkcja do usuwania wszystkich ukończonych zadań
+    val deleteCompletedTasks = {
+        tasks = tasks.filter { !it.isChecked }
+    }
+
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
@@ -136,6 +142,18 @@ fun TaskScreen() {
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = deleteCompletedTasks,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DeleteSweep,
+                            contentDescription = "Usuń ukończone"
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Usuń wszystkie ukończone")
                     }
                 }
             }
