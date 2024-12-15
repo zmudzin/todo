@@ -1,8 +1,8 @@
 package com.example.todo.components
 
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectDragGestures
 
 class DragController<T>(
     private val items: List<T>,
@@ -11,56 +11,41 @@ class DragController<T>(
     private var draggedItemIndex: Int? = null
     private var totalDragOffset = 0f
 
-    /**
-     * Funkcja rozpoczynająca przeciąganie.
-     */
     fun startDrag(index: Int) {
         draggedItemIndex = index
         totalDragOffset = 0f
     }
 
-    /**
-     * Funkcja aktualizująca logikę przeciągania i przenoszenia elementu.
-     */
-    fun updateDrag(dragAmountY: Float, itemHeight: Float): Int? {
+    fun updateDrag(dragAmountY: Float, itemHeight: Float, taskCount: Int): Int? {
         val fromIndex = draggedItemIndex ?: return null
 
-        // Aktualizuj całkowite przesunięcie w pionie
         totalDragOffset += dragAmountY
 
-        // Oblicz docelowy indeks na podstawie przesunięcia
         val targetIndex = (fromIndex + (totalDragOffset / itemHeight).toInt())
-            .coerceIn(0, items.size - 1) // Zapewnij zakres indeksów w ramach listy
+            .coerceIn(0, taskCount - 1)
 
-        // Jeśli indeks docelowy się zmienił, przesuń element
         if (targetIndex != fromIndex) {
             onMove(fromIndex, targetIndex)
             draggedItemIndex = targetIndex
-            totalDragOffset -= (targetIndex - fromIndex) * itemHeight // Zresetuj przesunięcie dla następnych obliczeń
+            totalDragOffset -= (targetIndex - fromIndex) * itemHeight
         }
 
         return draggedItemIndex
     }
 
-    /**
-     * Funkcja kończąca przeciąganie.
-     */
     fun endDrag() {
         draggedItemIndex = null
         totalDragOffset = 0f
     }
 
-    /**
-     * Modyfikator przeciągania dla elementów listy.
-     */
-    fun dragModifier(index: Int, itemHeight: Float): Modifier = Modifier.pointerInput(Unit) {
+    fun dragModifier(index: Int, itemHeight: Float, taskCount: Int): Modifier = Modifier.pointerInput(Unit) {
         detectDragGestures(
-            onDragStart = { startDrag(index) }, // Rozpocznij przeciąganie
-            onDragEnd = { endDrag() },         // Zakończ przeciąganie
-            onDragCancel = { endDrag() },      // Obsługa anulowania przeciągania
-            onDrag = { change, dragAmount ->   // Obsługa przesunięcia
+            onDragStart = { startDrag(index) },
+            onDragEnd = { endDrag() },
+            onDragCancel = { endDrag() },
+            onDrag = { change, dragAmount ->
                 change.consume()
-                updateDrag(dragAmount.y, itemHeight)
+                updateDrag(dragAmount.y, itemHeight, taskCount)
             }
         )
     }

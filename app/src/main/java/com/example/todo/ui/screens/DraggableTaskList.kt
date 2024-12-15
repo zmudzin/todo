@@ -1,5 +1,3 @@
-
-
 package com.example.todo.ui.screens
 
 import androidx.compose.foundation.layout.*
@@ -21,8 +19,8 @@ import com.example.todo.components.TaskItem
 
 @Composable
 fun DraggableTaskList(
-    tasks: List<Task>, // Tylko aktywne zadania
-    onMove: (Int, Int) -> Unit, // Funkcja zmiany kolejności w lokalnej liście
+    tasks: List<Task>, // Lista aktywnych zadań
+    onMove: (Int, Int) -> Unit, // Funkcja zmiany kolejności
     onTaskCheckedChange: (Int, Boolean) -> Unit,
     onDelete: (Int) -> Unit,
     onTaskEdit: (Task) -> Unit
@@ -37,12 +35,11 @@ fun DraggableTaskList(
                 modifier = Modifier
                     .fillMaxWidth()
                     .onGloballyPositioned { coordinates ->
-                        // Zapisz wysokość elementu
                         if (itemHeight.value == 0f) {
                             itemHeight.value = coordinates.size.height.toFloat()
                         }
                     }
-                    .then(dragController.dragModifier(index, itemHeight.value)) // Przekaż wysokość do DragController
+                    .then(dragController.dragModifier(index, itemHeight.value, tasks.size))
             ) {
                 Icon(
                     imageVector = Icons.Default.DragHandle,

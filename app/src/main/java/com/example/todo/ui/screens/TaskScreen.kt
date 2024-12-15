@@ -3,172 +3,139 @@ package com.example.todo.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.DeleteSweep
-import androidx.compose.material3.*
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.example.todo.components.AddTaskDialog
 import com.example.todo.components.AddTaskFAB
 import com.example.todo.components.EditTaskDialog
 import com.example.todo.components.Header
 import com.example.todo.components.TaskItem
+import com.example.todo.data.TaskRepository
 import com.example.todo.models.Task
+import kotlinx.coroutines.launch
 
 @Composable
-fun TaskScreen() {
-    var tasks by remember {
-        mutableStateOf(
-            listOf(
-                Task(name = "Zadanie 1"),
-                Task(name = "Zadanie 2"),
-                Task(name = "Zadanie 3"),
-                Task(name = "Zadanie 4"),
-                Task(name = "Zadanie 5")
-            )
-        )
-    }
+fun TaskScreen(taskRepository: TaskRepository) {
+    val scope = rememberCoroutineScope()
     var isDialogOpen by remember { mutableStateOf(false) }
     var editingTask by remember { mutableStateOf<Task?>(null) }
+    var taskCount by remember { mutableStateOf(0) }
 
-    val activeTasks = tasks.filter { !it.isChecked }
-    val completedTasks = tasks.filter { it.isChecked }
+    // Pobieranie liczby zadań
+    LaunchedEffect(Unit) {
+        scope.launch {
+            taskCount = taskRepository.getTaskCount()
+        }
+    }
 
-    // Funkcja do zmiany pozycji zadań
+    val activeTasks by taskRepository.activeTasks.collectAsState(initial = emptyList())
+    val completedTasks by taskRepository.completedTasks.collectAsState(initial = emptyList())
+
     val onMove: (Int, Int) -> Unit = { fromIndex, toIndex ->
-        val activeTasks = tasks.filter { !it.isChecked } // Lokalna lista aktywnych zadań
-        val globalFromIndex = tasks.indexOf(activeTasks[fromIndex]) // Mapowanie indeksów
-        val globalToIndex = tasks.indexOf(activeTasks[toIndex])
+        if (fromIndex in activeTasks.indices && toIndex in activeTasks.indices) {
+            scope.launch {
+                val updatedTasks = activeTasks.toMutableList()
+                val movedTask = updatedTasks.removeAt(fromIndex)
+                updatedTasks.add(toIndex, movedTask)
 
-        tasks = tasks.toMutableList().apply {
-            val item = removeAt(globalFromIndex)
-            add(globalToIndex, item)
-        }
-    }
-
-    // Funkcja do zmiany stanu checkboxa
-    val onTaskCheckedChange: (Int, Boolean) -> Unit = { index, isChecked ->
-        tasks = tasks.toMutableList().apply {
-            this[index] = this[index].copy(isChecked = isChecked)
-        }
-    }
-
-    // Funkcja do usuwania zadania
-    val onDelete: (Int) -> Unit = { index ->
-        tasks = tasks.toMutableList().apply {
-            removeAt(index)
-        }
-    }
-
-    // Funkcja do edycji zadania
-    val onTaskEdit: (Task) -> Unit = { task ->
-        editingTask = task
-    }
-
-    // Funkcja wywoływana po zapisaniu zmian w edytowanym zadaniu
-    val onEdit: (String) -> Unit = { newName ->
-        editingTask?.let { task ->
-            tasks = tasks.map {
-                if (it.id == task.id) it.copy(name = newName) else it
+                // Aktualizacja pozycji w bazie danych
+                updatedTasks.forEachIndexed { index, task ->
+                    taskRepository.updateTask(task.copy(position = index))
+                }
             }
         }
-        editingTask = null
     }
 
-    // Funkcja do usuwania wszystkich ukończonych zadań
-    val deleteCompletedTasks = {
-        tasks = tasks.filter { !it.isChecked }
+    val onTaskCheckedChange: (Task, Boolean) -> Unit = { task, isChecked ->
+        scope.launch {
+            taskRepository.updateTask(task.copy(isChecked = isChecked))
+        }
+    }
+
+    val onDelete: (Task) -> Unit = { task ->
+        scope.launch {
+            taskRepository.deleteTask(task)
+        }
+    }
+
+    val onTaskEdit: (Task, String) -> Unit = { task, newName ->
+        scope.launch {
+            taskRepository.updateTask(task.copy(name = newName))
+        }
     }
 
     Scaffold(
-        floatingActionButton = {
-            AddTaskFAB(onClick = { isDialogOpen = true })
-        },
+        floatingActionButton = { AddTaskFAB(onClick = { isDialogOpen = true }) },
         content = { paddingValues ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                // Sekcja aktywnych zadań
                 Header(title = "Aktywne")
                 DraggableTaskList(
                     tasks = activeTasks,
-                    onMove = onMove,
+                    onMove = { from, to -> onMove(from, to) },
                     onTaskCheckedChange = { index, isChecked ->
-                        val globalIndex = tasks.indexOf(activeTasks[index])
-                        onTaskCheckedChange(globalIndex, isChecked)
+                        val task = activeTasks[index]
+                        onTaskCheckedChange(task, isChecked)
                     },
                     onDelete = { index ->
-                        val globalIndex = tasks.indexOf(activeTasks[index])
-                        onDelete(globalIndex)
+                        val task = activeTasks[index]
+                        onDelete(task)
                     },
                     onTaskEdit = { task ->
-                        onTaskEdit(task)
+                        editingTask = task
                     }
                 )
 
-                // Sekcja ukończonych zadań (jeśli istnieją)
                 if (completedTasks.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(16.dp))
                     Header(title = "Ukończone")
                     LazyColumn {
                         items(completedTasks) { task ->
                             TaskItem(
                                 task = task,
                                 onTaskCheckedChange = { isChecked ->
-                                    val globalIndex = tasks.indexOf(task)
-                                    onTaskCheckedChange(globalIndex, isChecked)
+                                    onTaskCheckedChange(task, isChecked)
                                 },
-                                onDelete = {
-                                    val globalIndex = tasks.indexOf(task)
-                                    onDelete(globalIndex)
-                                },
-                                onEdit = { onTaskEdit(task) },
-                                modifier = Modifier.fillMaxWidth()
+                                onDelete = { onDelete(task) },
+                                onEdit = {
+                                    editingTask = task
+                                }
                             )
                         }
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = deleteCompletedTasks,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.DeleteSweep,
-                            contentDescription = "Usuń ukończone"
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Usuń wszystkie ukończone")
                     }
                 }
             }
         }
     )
 
-    // Dialog dodawania zadania
     if (isDialogOpen) {
         AddTaskDialog(
             onDismiss = { isDialogOpen = false },
             onAdd = { newTaskName ->
                 if (newTaskName.isNotBlank()) {
-                    tasks = tasks + Task(name = newTaskName)
+                    scope.launch {
+                        taskRepository.addTask(Task(name = newTaskName, position = taskCount))
+                        taskCount += 1
+                    }
+                    isDialogOpen = false
                 }
-                isDialogOpen = false
             }
         )
     }
 
-    // Dialog edycji zadania
     editingTask?.let { task ->
         EditTaskDialog(
             initialTaskName = task.name,
             onDismiss = { editingTask = null },
-            onEdit = onEdit
+            onEdit = { newName ->
+                if (newName.isNotBlank()) {
+                    onTaskEdit(task, newName)
+                }
+                editingTask = null
+            }
         )
     }
 }
