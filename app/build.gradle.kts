@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("kotlin-kapt") // Potrzebny dla Room
 }
 
 android {
@@ -36,6 +37,7 @@ android {
 }
 
 dependencies {
+    // AndroidX Core i Compose
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("androidx.activity:activity-compose:1.9.3")
@@ -45,9 +47,20 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended:1.7.6")
     implementation("androidx.compose.foundation:foundation:1.7.6")
     debugImplementation("androidx.compose.ui:ui-tooling:1.7.6")
+
+    // Placeholder Material3 (opcjonalnie)
     implementation("com.google.accompanist:accompanist-placeholder-material3:0.36.0")
+
+    // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("androidx.datastore:datastore:1.1.1")
+
+    // Room Database
+    implementation("androidx.room:room-runtime:2.6.0")
+    kapt("androidx.room:room-compiler:2.6.0") // Dla generowania kodu
+    implementation("androidx.room:room-ktx:2.6.0") // Kotlin Extensions
+
+    // Testy
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
