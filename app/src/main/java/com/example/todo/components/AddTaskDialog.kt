@@ -12,7 +12,7 @@ fun AddTaskDialog(onDismiss: () -> Unit, onAdd: (String) -> Unit) {
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Dodaj nowe zadanie") },
+        title = { Text("Dodaj nowe zadania") },
         text = {
             TextField(
                 value = taskName,
@@ -20,21 +20,24 @@ fun AddTaskDialog(onDismiss: () -> Unit, onAdd: (String) -> Unit) {
                     taskName = it
                     isError = false
                 },
-                placeholder = { Text("Wpisz nazwę zadania") },
+                placeholder = { Text("Wpisz zadania (każda linia to nowe zadanie)") },
                 modifier = Modifier.fillMaxWidth(),
                 isError = isError,
                 supportingText = if (isError) {
                     { Text("Zadanie nie może być puste") }
-                } else null
+                } else null,
+                minLines = 3
             )
         },
         confirmButton = {
             Button(onClick = {
-                if (taskName.trim().isBlank()) {
+                val tasks = taskName.split("\n").map { it.trim() }.filter { it.isNotBlank() }
+                if (tasks.isEmpty()) {
                     isError = true
                 } else {
-                    onAdd(taskName.trim())
+                    tasks.forEach { task -> onAdd(task) }
                     taskName = ""
+                    onDismiss()
                 }
             }) {
                 Text("Dodaj")
