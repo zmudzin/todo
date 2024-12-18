@@ -9,25 +9,25 @@ class DragController<T>(
     private val onMove: (Int, Int) -> Unit
 ) {
     private var draggedItemIndex: Int? = null
-    private var totalDragOffset = 0f
+    var dragAmount = 0f
+        private set
 
     fun startDrag(index: Int) {
         draggedItemIndex = index
-        totalDragOffset = 0f
+        dragAmount = 0f
     }
 
     fun updateDrag(dragAmountY: Float, itemHeight: Float, taskCount: Int): Int? {
+        dragAmount += dragAmountY
         val fromIndex = draggedItemIndex ?: return null
 
-        totalDragOffset += dragAmountY
-
-        val targetIndex = (fromIndex + (totalDragOffset / itemHeight).toInt())
+        val targetIndex = (fromIndex + (dragAmount / itemHeight).toInt())
             .coerceIn(0, taskCount - 1)
 
         if (targetIndex != fromIndex) {
             onMove(fromIndex, targetIndex)
             draggedItemIndex = targetIndex
-            totalDragOffset -= (targetIndex - fromIndex) * itemHeight
+            dragAmount -= (targetIndex - fromIndex) * itemHeight
         }
 
         return draggedItemIndex
@@ -35,18 +35,6 @@ class DragController<T>(
 
     fun endDrag() {
         draggedItemIndex = null
-        totalDragOffset = 0f
-    }
-
-    fun dragModifier(index: Int, itemHeight: Float, taskCount: Int): Modifier = Modifier.pointerInput(Unit) {
-        detectDragGestures(
-            onDragStart = { startDrag(index) },
-            onDragEnd = { endDrag() },
-            onDragCancel = { endDrag() },
-            onDrag = { change, dragAmount ->
-                change.consume()
-                updateDrag(dragAmount.y, itemHeight, taskCount)
-            }
-        )
+        dragAmount = 0f
     }
 }
