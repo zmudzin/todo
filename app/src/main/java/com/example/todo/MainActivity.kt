@@ -7,18 +7,18 @@ import com.example.todo.ui.theme.ToDoAppTheme
 import com.example.todo.ui.screens.TaskScreen
 import com.example.todo.data.DatabaseProvider
 import com.example.todo.data.TaskRepository
+import com.example.todo.ui.viewmodels.TaskViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Inicjalizacja bazy danych i repozytorium
         val database = DatabaseProvider.getDatabase(this)
-        val taskRepository = TaskRepository(database.taskDao())
+        val repository = TaskRepository(database.taskDao())
+        val viewModel = TaskViewModel(repository)
 
         setContent {
             ToDoAppTheme {
-                TaskScreen(taskRepository = taskRepository)
+                TaskScreen(viewModel)
             }
         }
     }

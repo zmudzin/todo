@@ -37,7 +37,7 @@ fun ExtendedFAB(
             // Opcja usunięcia ukończonych zadań (tylko gdy są ukończone zadania)
             if (hasCompletedTasks) {
                 AnimatedVisibility(
-                    visible = isExpanded,
+                    visible = isExpanded || hasCompletedTasks,
                     enter = fadeIn(),
                     exit = fadeOut()
                 ) {
