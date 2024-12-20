@@ -2,7 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
-    id("kotlin-kapt") // Potrzebny dla Room
+    id("com.google.devtools.ksp") // Zamiana kapt na ksp
 }
 
 android {
@@ -22,7 +22,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.3" // lub nowsza wersja
+        kotlinCompilerExtensionVersion = "1.5.3"
     }
 
     kotlinOptions {
@@ -48,17 +48,17 @@ dependencies {
     implementation(libs.androidx.foundation)
     debugImplementation(libs.ui.tooling)
 
-    // Placeholder Material3 (opcjonalnie)
+    // Placeholder Material3
     implementation(libs.accompanist.placeholder.material3)
 
     // DataStore
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.datastore)
 
-    // Room Database
+    // Room Database - zaktualizowane do KSP
     implementation("androidx.room:room-runtime:2.6.0")
-    kapt("androidx.room:room-compiler:2.6.0") // Dla generowania kodu
-    implementation("androidx.room:room-ktx:2.6.0") // Kotlin Extensions
+    ksp("androidx.room:room-compiler:2.6.0") // Zamiana kapt na ksp
+    implementation("androidx.room:room-ktx:2.6.0")
 
     // Testy
     testImplementation("junit:junit:4.13.2")
