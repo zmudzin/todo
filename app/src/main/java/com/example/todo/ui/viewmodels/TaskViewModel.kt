@@ -1,4 +1,3 @@
-// TaskViewModel.kt
 package com.example.todo.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
@@ -9,77 +8,140 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class TaskViewModel(private val repository: TaskRepository) : ViewModel() {
-    private val _uiState = MutableStateFlow(TaskUiState())
+    private val _uiState = MutableStateFlow<TaskUiState>(TaskUiState.Loading)
     val uiState = _uiState.asStateFlow()
 
     init {
+        loadTasks()
+    }
+
+    private fun loadTasks() {
         viewModelScope.launch {
-            repository.activeTasks.collect { tasks ->
-                _uiState.update { it.copy(activeTasks = tasks) }
+            try {
+                combine(
+                    repository.activeTasks,
+                    repository.completedTasks
+                ) { active, completed ->
+                    TaskUiState.Success(
+                        activeTasks = active,
+                        completedTasks = completed,
+                        taskCount = active.size + completed.size
+                    )
+                }.collect { state ->
+                    _uiState.value = state
+                }
+            } catch (e: Exception) {
+                _uiState.value = TaskUiState.Error(
+                    message = "Nie udało się załadować zadań: ${e.localizedMessage}",
+                    cause = e
+                )
             }
         }
-        viewModelScope.launch {
-            repository.completedTasks.collect { tasks ->
-                _uiState.update { it.copy(completedTasks = tasks) }
-            }
-        }
+    }
+
+    fun retryLoading() {
+        _uiState.value = TaskUiState.Loading
+        loadTasks()
     }
 
     fun onAddTask(taskName: String) {
         viewModelScope.launch {
-            repository.addTask(Task(name = taskName, position = _uiState.value.taskCount))
-            _uiState.update { it.copy(isDialogOpen = false, taskCount = it.taskCount + 1) }
+            try {
+                val currentState = _uiState.value as? TaskUiState.Success ?: return@launch
+                val newTask = Task(
+                    name = taskName,
+                    position = currentState.activeTasks.size
+                )
+                repository.addTask(newTask)
+                _uiState.value = currentState.copy(
+                    isDialogOpen = false
+                )
+            } catch (e: Exception) {
+                _uiState.value = TaskUiState.Error("Nie udało się dodać zadania", e)
+            }
         }
     }
 
     fun onReorderTasks(fromIndex: Int, toIndex: Int) {
-        val tasks = _uiState.value.activeTasks
-        if (fromIndex in tasks.indices && toIndex in tasks.indices) {
-            viewModelScope.launch {
-                val updatedTasks = tasks.toMutableList()
-                val movedTask = updatedTasks.removeAt(fromIndex)
-                updatedTasks.add(toIndex, movedTask)
-                updatedTasks.forEachIndexed { index, task ->
-                    repository.updateTask(task.copy(position = index))
+        viewModelScope.launch {
+            try {
+                val currentState = _uiState.value as? TaskUiState.Success ?: return@launch
+                val tasks = currentState.activeTasks.toMutableList()
+                if (fromIndex in tasks.indices && toIndex in tasks.indices) {
+                    val movedTask = tasks.removeAt(fromIndex)
+                    tasks.add(toIndex, movedTask)
+                    tasks.forEachIndexed { index, task ->
+                        repository.updateTask(task.copy(position = index))
+                    }
                 }
+            } catch (e: Exception) {
+                _uiState.value = TaskUiState.Error("Nie udało się zmienić kolejności zadań", e)
             }
         }
     }
 
     fun onTaskCheckedChange(task: Task, isChecked: Boolean) {
         viewModelScope.launch {
-            repository.updateTask(task.copy(isChecked = isChecked))
+            try {
+                val currentState = _uiState.value as? TaskUiState.Success ?: return@launch
+                repository.updateTask(task.copy(isChecked = isChecked))
+            } catch (e: Exception) {
+                _uiState.value = TaskUiState.Error("Nie udało się zaktualizować stanu zadania", e)
+            }
         }
     }
 
     fun onDeleteTask(task: Task) {
         viewModelScope.launch {
-            repository.deleteTask(task)
+            try {
+                val currentState = _uiState.value as? TaskUiState.Success ?: return@launch
+                repository.deleteTask(task)
+            } catch (e: Exception) {
+                _uiState.value = TaskUiState.Error("Nie udało się usunąć zadania", e)
+            }
         }
     }
 
     fun onTaskEdit(task: Task, newName: String) {
         viewModelScope.launch {
-            repository.updateTask(task.copy(name = newName))
-            _uiState.update { it.copy(editingTask = null) }
+            try {
+                val currentState = _uiState.value as? TaskUiState.Success ?: return@launch
+                repository.updateTask(task.copy(name = newName))
+                _uiState.value = currentState.copy(editingTask = null)
+            } catch (e: Exception) {
+                _uiState.value = TaskUiState.Error("Nie udało się edytować zadania", e)
+            }
         }
     }
 
     fun onDeleteCompletedTasks() {
         viewModelScope.launch {
-            repository.deleteAllCompletedTasks()
+            try {
+                val currentState = _uiState.value as? TaskUiState.Success ?: return@launch
+                repository.deleteAllCompletedTasks()
+            } catch (e: Exception) {
+                _uiState.value = TaskUiState.Error("Nie udało się usunąć ukończonych zadań", e)
+            }
         }
     }
 
-    fun onAddDialogOpen() = _uiState.update { it.copy(isDialogOpen = true) }
-    fun onAddDialogClose() = _uiState.update { it.copy(isDialogOpen = false) }
-    fun onEditDialogClose() = _uiState.update { it.copy(editingTask = null) }
-    fun onEditTask(task: Task) = _uiState.update { it.copy(editingTask = task) }
+    fun onAddDialogOpen() {
+        val currentState = _uiState.value as? TaskUiState.Success ?: return
+        _uiState.value = currentState.copy(isDialogOpen = true)
+    }
+
+    fun onAddDialogClose() {
+        val currentState = _uiState.value as? TaskUiState.Success ?: return
+        _uiState.value = currentState.copy(isDialogOpen = false)
+    }
+
+    fun onEditDialogClose() {
+        val currentState = _uiState.value as? TaskUiState.Success ?: return
+        _uiState.value = currentState.copy(editingTask = null)
+    }
+
+    fun onEditTask(task: Task) {
+        val currentState = _uiState.value as? TaskUiState.Success ?: return
+        _uiState.value = currentState.copy(editingTask = task)
+    }
 }
-data class TaskUiState(
-    val activeTasks: List<Task> = emptyList(),
-    val completedTasks: List<Task> = emptyList(),
-    val isDialogOpen: Boolean = false,
-    val editingTask: Task? = null,
-    val taskCount: Int = 0
-)
