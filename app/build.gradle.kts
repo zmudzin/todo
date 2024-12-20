@@ -2,7 +2,8 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
-    id("com.google.devtools.ksp") // Zamiana kapt na ksp
+    id("com.google.devtools.ksp")
+    id("dagger.hilt.android.plugin")
 }
 
 android {
@@ -60,6 +61,9 @@ dependencies {
     ksp("androidx.room:room-compiler:2.6.0") // Zamiana kapt na ksp
     implementation("androidx.room:room-ktx:2.6.0")
 
+    //zależności Hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
     // Testy
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")

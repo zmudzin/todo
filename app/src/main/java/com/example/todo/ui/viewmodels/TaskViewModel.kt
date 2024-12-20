@@ -4,10 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.todo.data.TaskRepository
 import com.example.todo.models.Task
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class TaskViewModel(private val repository: TaskRepository) : ViewModel() {
+@HiltViewModel
+class TaskViewModel @Inject constructor(
+    private val repository: TaskRepository
+) : ViewModel() {
+    // reszta kodu pozostaje bez zmian
     private val _uiState = MutableStateFlow<TaskUiState>(TaskUiState.Loading)
     val uiState = _uiState.asStateFlow()
 
