@@ -24,6 +24,12 @@ interface TaskDao {
     @Query("UPDATE tasks SET position = :position WHERE id = :taskId")
     suspend fun updateTaskPosition(taskId: String, position: Int)
 
+    @Query("SELECT * FROM tasks WHERE haEntityId = :entityId")
+    fun getTasksByHaEntity(entityId: String): Flow<List<Task>>
+
+    @Query("DELETE FROM tasks WHERE haEntityId = :entityId")
+    suspend fun deleteTasksByHaEntity(entityId: String)
+
     @Query("SELECT COUNT(*) FROM tasks")
     suspend fun getTaskCount(): Int
 
@@ -32,4 +38,7 @@ interface TaskDao {
 
     @Query("SELECT COUNT(*) FROM tasks WHERE isChecked = 1")
     suspend fun getCompletedTaskCount(): Int
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(tasks: List<Task>)
     }

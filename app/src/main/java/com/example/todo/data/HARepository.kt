@@ -2,11 +2,17 @@ package com.example.todo.data
 
 import com.example.todo.BuildConfig
 import android.content.Context
+import android.util.Log
 import com.example.todo.models.HAEntity
+import kotlinx.coroutines.flow.onEach
+import com.example.todo.models.events.TodoEvent
 import com.example.todo.models.websocket.HAWebSocketMessage
 import com.example.todo.services.HAWebSocketService
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.transform
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -14,23 +20,35 @@ import javax.inject.Singleton
 class HARepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val webSocketService: HAWebSocketService,
-    private val haEntityDao: HAEntityDao
+    private val haEntityDao: HAEntityDao,
+    private val taskDao: TaskDao
 ) {
-    private val haServerUrl = BuildConfig.HA_SERVER_URL
-    private val haToken = BuildConfig.HA_TOKEN
+    init {
+        CoroutineScope(Dispatchers.IO).launch {
+            webSocketService.todoEvents.collect { event ->
+                when (event) {
+                    is TodoEvent.ItemsUpdated -> taskDao.insertAll(event.items)
+                    is TodoEvent.Error -> Log.e("HARepository", "Error: ${event.exception.message}")
+                }
+            }
+        }
+    }
 
     val messages = webSocketService.messages.transform { message ->
         emit(message)
         when (message) {
             is HAWebSocketMessage.AuthResponse -> {
-                if (message.success) {
-                    webSocketService.subscribeToStateChanges()
-                }
+                if (message.success) webSocketService.subscribeToStateChanges()
             }
-            is HAWebSocketMessage.StateChanged -> {
-                processStateChange(message)
-            }
+            is HAWebSocketMessage.StateChanged -> processStateChange(message)
             else -> {}
+        }
+    }
+
+    val todoUpdates = webSocketService.todoEvents.onEach { event ->
+        when (event) {
+            is TodoEvent.ItemsUpdated -> taskDao.insertAll(event.items)
+            is TodoEvent.Error -> Log.e("HARepository", "Error: ${event.exception.message}")
         }
     }
 
@@ -46,6 +64,6 @@ class HARepository @Inject constructor(
         haEntityDao.insertEntity(entity)
     }
 
-    fun connectToHA() = webSocketService.connect(haServerUrl, haToken)
+    fun connectToHA() = webSocketService.connect(BuildConfig.HA_SERVER_URL, BuildConfig.HA_TOKEN)
     fun disconnect() = webSocketService.disconnect()
 }

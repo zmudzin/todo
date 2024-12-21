@@ -1,9 +1,13 @@
 package com.example.todo.services
 
 import android.util.Log
+import com.example.todo.models.Task
+import com.example.todo.models.events.TodoEvent
 import com.example.todo.models.websocket.HAWebSocketMessage
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.runBlocking
 import okhttp3.*
@@ -14,6 +18,7 @@ import javax.inject.Singleton
 
 @Singleton
 class HAWebSocketService @Inject constructor() {
+    private var currentMessageId = 1
     private var webSocket: WebSocket? = null
     private val client = OkHttpClient.Builder()
         .readTimeout(30, TimeUnit.SECONDS)
@@ -22,7 +27,11 @@ class HAWebSocketService @Inject constructor() {
     private val _messageChannel = Channel<HAWebSocketMessage>(Channel.BUFFERED)
     val messages: Flow<HAWebSocketMessage> = _messageChannel.receiveAsFlow()
 
+    private val _todoEvents = MutableSharedFlow<TodoEvent>()
+    val todoEvents = _todoEvents.asSharedFlow()
+
     fun connect(serverUrl: String, token: String) {
+
         Log.d(TAG, "Próba połączenia z: $serverUrl")
 
         val request = Request.Builder()
@@ -39,6 +48,7 @@ class HAWebSocketService @Inject constructor() {
                 try {
                     val jsonObject = JSONObject(text)
                     val type = jsonObject.getString("type")
+                    Log.d(TAG, "Typ wiadomości: $type")
 
                     when (type) {
                         "auth_required" -> {
@@ -56,19 +66,29 @@ class HAWebSocketService @Inject constructor() {
                                 ))
                             }
                         }
-                        "auth_invalid" -> {
-                            Log.e(TAG, "Autoryzacja nieudana")
-                            runBlocking {
-                                _messageChannel.send(HAWebSocketMessage.AuthResponse(
-                                    id = 1,
-                                    type = "auth_invalid",
-                                    success = false
-                                ))
-                            }
+                        "auth_invalid" -> { /* istniejący kod */ }
+                        "event" -> {
+                            Log.d(TAG, "Otrzymano event: ${jsonObject.toString(2)}")
+                            handleEventMessage(jsonObject)
+                        }
+                        "result" -> {
+                            Log.d(TAG, "Otrzymano result: ${jsonObject.toString(2)}")
+                            handleResultMessage(jsonObject)
                         }
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Błąd parsowania wiadomości", e)
+                    e.printStackTrace()
+                }
+            }
+
+            private fun handleEventMessage(jsonObject: JSONObject) {
+                val event = jsonObject.getJSONObject("event")
+                val data = event.getJSONObject("data")
+                val entityId = data.getString("entity_id")
+
+                if (entityId.startsWith("todo.")) {
+                    getTodoItems(entityId)
                 }
             }
 
@@ -83,6 +103,28 @@ class HAWebSocketService @Inject constructor() {
         })
     }
 
+    private fun handleResultMessage(jsonObject: JSONObject) {
+        if (jsonObject.optBoolean("success", false)) {
+            val result = jsonObject.optJSONObject("result")
+            if (result?.has("items") == true) {
+                val items = parseTodoItems(result)
+                runBlocking {
+                    _todoEvents.emit(TodoEvent.ItemsUpdated(items.map {
+                        Task(
+                            name = it.name,
+                            isChecked = it.complete,
+                            position = 0 // domyślna pozycja
+                        )
+                    }))
+                }
+            }
+        } else {
+            val error = jsonObject.optJSONObject("error")
+            runBlocking {
+                _todoEvents.emit(TodoEvent.Error(Exception(error?.optString("message"))))
+            }
+        }
+    }
     private fun sendAuthMessage(token: String) {
         val authMessage = """
             {
@@ -95,15 +137,37 @@ class HAWebSocketService @Inject constructor() {
     }
 
     fun subscribeToStateChanges() {
+        val messageId = getNextMessageId()
         val subscribeMessage = """
         {
-            "id": 18,
+            "id": $messageId,
             "type": "subscribe_events",
             "event_type": "state_changed"
         }
-    """.trimIndent()
+        """.trimIndent()
         Log.d(TAG, "Wysyłam subskrypcję zdarzeń: $subscribeMessage")
         webSocket?.send(subscribeMessage)
+    }
+
+    private fun parseTodoItems(attributes: JSONObject): List<HAWebSocketMessage.TodoItem> {
+        return try {
+            val items = attributes.optJSONArray("items") ?: return emptyList()
+            List(items.length()) { index ->
+                val item = items.getJSONObject(index)
+                HAWebSocketMessage.TodoItem(
+                    name = item.getString("name"),
+                    complete = item.getBoolean("complete")
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Błąd parsowania zadań", e)
+            emptyList()
+        }
+    }
+    fun getNextMessageId(): Int {
+        synchronized(this) {
+            return currentMessageId++
+        }
     }
 
     fun disconnect() {
@@ -113,5 +177,21 @@ class HAWebSocketService @Inject constructor() {
 
     companion object {
         private const val TAG = "HAWebSocketService"
+    }
+    private fun getTodoItems(entityId: String) {
+        val messageId = getNextMessageId()
+        val message = """
+        {
+            "id": $messageId,
+            "type": "call_service",
+            "domain": "todo",
+            "service": "get_items",
+            "target": {
+                "entity_id": "$entityId"
+            },
+            "return_response": true
+        }
+        """.trimIndent()
+        webSocket?.send(message)
     }
 }
