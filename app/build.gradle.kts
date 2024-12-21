@@ -20,6 +20,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     composeOptions {
@@ -35,6 +36,17 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     buildToolsVersion = "35.0.0"
+
+    buildTypes {
+        debug {
+            buildConfigField("String", "HA_TOKEN", "\"${project.findProperty("HA_TOKEN") ?: ""}\"")
+            buildConfigField("String", "HA_SERVER_URL", "\"${project.findProperty("HA_SERVER_URL") ?: ""}\"")
+        }
+        release {
+            buildConfigField("String", "HA_TOKEN", "\"${project.findProperty("HA_TOKEN") ?: ""}\"")
+            buildConfigField("String", "HA_SERVER_URL", "\"${project.findProperty("HA_SERVER_URL") ?: ""}\"")
+        }
+    }
 }
 
 dependencies {
@@ -60,6 +72,13 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.0")
     ksp("androidx.room:room-compiler:2.6.0") // Zamiana kapt na ksp
     implementation("androidx.room:room-ktx:2.6.0")
+
+    // WebSocket
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // Moshi
+    implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
+    ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.0")
 
     //zależności Hilt
     implementation(libs.hilt.android)

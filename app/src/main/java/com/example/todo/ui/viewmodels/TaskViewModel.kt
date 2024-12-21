@@ -2,8 +2,10 @@ package com.example.todo.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.todo.data.HARepository
 import com.example.todo.data.TaskRepository
 import com.example.todo.models.Task
+import com.example.todo.models.websocket.HAWebSocketMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -11,14 +13,67 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TaskViewModel @Inject constructor(
-    private val repository: TaskRepository
+    private val repository: TaskRepository,
+    private val haRepository: HARepository
 ) : ViewModel() {
-    // reszta kodu pozostaje bez zmian
+    private val _haConnectionState = MutableStateFlow(HAConnectionState.Disconnected)
     private val _uiState = MutableStateFlow<TaskUiState>(TaskUiState.Loading)
-    val uiState = _uiState.asStateFlow()
+    val uiState = combine(
+        _uiState,
+        _haConnectionState
+    ) { state, haConnection ->
+        when (state) {
+            is TaskUiState.Success -> state.copy(haConnectionState = haConnection)
+            else -> state
+        }
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        TaskUiState.Loading
+    )
 
     init {
         loadTasks()
+        initializeHAConnection()
+    }
+
+    private fun initializeHAConnection() {
+        viewModelScope.launch {
+            try {
+                _haConnectionState.value = HAConnectionState.Connecting
+                haRepository.connectToHA()
+
+                haRepository.messages.collect { message ->
+                    when (message) {
+                        is HAWebSocketMessage.AuthResponse -> {
+                            _haConnectionState.value = if (message.success) {
+                                HAConnectionState.Connected
+                            } else {
+                                HAConnectionState.Error
+                            }
+                        }
+                        else -> {}
+                    }
+                }
+            } catch (e: Exception) {
+                _haConnectionState.value = HAConnectionState.Error
+                _uiState.value = TaskUiState.Error(
+                    message = "Błąd połączenia z Home Assistant: ${e.localizedMessage}",
+                    cause = e
+                )
+            }
+        }
+    }
+
+
+    private fun updateHAConnectionState(newState: HAConnectionState) {
+        val currentState = _uiState.value as? TaskUiState.Success ?: return
+        _uiState.value = currentState.copy(haConnectionState = newState)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        haRepository.disconnect()
     }
 
     private fun loadTasks() {
@@ -31,7 +86,8 @@ class TaskViewModel @Inject constructor(
                     TaskUiState.Success(
                         activeTasks = active,
                         completedTasks = completed,
-                        taskCount = active.size + completed.size
+                        taskCount = active.size + completed.size,
+                        haConnectionState = HAConnectionState.Disconnected // Dodane
                     )
                 }.collect { state ->
                     _uiState.value = state

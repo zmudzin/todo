@@ -10,11 +10,19 @@ sealed interface TaskUiState {
         val completedTasks: List<Task> = emptyList(),
         val isDialogOpen: Boolean = false,
         val editingTask: Task? = null,
-        val taskCount: Int = 0
+        val taskCount: Int = 0,
+        val haConnectionState: HAConnectionState = HAConnectionState.Disconnected
     ) : TaskUiState
 
     data class Error(
         val message: String,
         val cause: Throwable? = null
     ) : TaskUiState
+}
+
+enum class HAConnectionState {
+    Connected,
+    Connecting,
+    Disconnected,
+    Error
 }
